@@ -34,6 +34,7 @@ When someone deletes a message or media, the bot can preserve or forward that co
 ├── package.json
 ├── package-lock.json
 └── auth_info/
+```
 
 Important: auth_info/ usually contains session/login data and should never be uploaded to a public GitHub repository.
 
