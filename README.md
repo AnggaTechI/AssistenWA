@@ -1,27 +1,41 @@
 # WhatsApp Anti-Delete Bot
 
-A lightweight WhatsApp bot built with Node.js that helps monitor and preserve deleted messages and media for authorized use cases.
+<p align="center">
+  A lightweight WhatsApp bot built with Node.js to detect, preserve, and forward deleted messages or media for authorized use cases.
+</p>
 
-This project is mainly focused on **anti-delete functionality**, allowing the bot to detect deleted messages or media and forward or preserve them based on your configuration.
+<p align="center">
+  <img src="https://img.shields.io/badge/Node.js-Required-339933?style=for-the-badge&logo=node.js&logoColor=white" />
+  <img src="https://img.shields.io/badge/WhatsApp-Bot-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" />
+  <img src="https://img.shields.io/badge/Status-Active-1f6feb?style=for-the-badge" />
+  <img src="https://img.shields.io/badge/Focus-Anti--Delete-ff6b6b?style=for-the-badge" />
+</p>
 
 ---
 
-## ✨ Main Features
+## 📖 Overview
 
-- Anti-delete **text messages**
-- Anti-delete **media messages**
-- Automatically detects deleted content
-- Can forward deleted content to a target WhatsApp account
-- Lightweight project structure
+**WhatsApp Anti-Delete Bot** is a simple and lightweight bot designed to monitor deleted WhatsApp messages and media. Its main purpose is to preserve deleted content and optionally forward it to a configured target account, depending on how the script is set up.
+
+This project is intended for **educational, archival, administrative, and authorized use cases only**.
+
+---
+
+## ✨ Features
+
+- Detects deleted **text messages**
+- Detects deleted **media messages**
+- Preserves deleted content
+- Can forward deleted content to a configured target account
+- Lightweight and easy to maintain
+- Simple project structure
 - Easy to configure and customize
 
 ---
 
-## 📌 Main Purpose
+## 🎯 Main Purpose
 
-The primary purpose of this bot is to provide an **anti-delete system for WhatsApp messages and media**.
-
-When someone deletes a message or media, the bot can preserve or forward that content to the configured target account, depending on how the script is set up.
+The main goal of this bot is to provide an **anti-delete system for WhatsApp messages and media**. When a user deletes a message or media file, the bot can capture and preserve that content based on the configured logic in the script.
 
 ---
 
@@ -33,71 +47,127 @@ When someone deletes a message or media, the bot can preserve or forward that co
 ├── commands/
 ├── package.json
 ├── package-lock.json
-└── auth_info/
 ```
 
-Important: auth_info/ usually contains session/login data and should never be uploaded to a public GitHub repository.
+> **Important:** `auth_info/` usually contains session or login data and should **never** be uploaded to a public GitHub repository.
 
-⚙️ Requirements
+---
 
-Make sure you have:
+## ⚙️ Requirements
 
-Node.js installed
-npm installed
-A WhatsApp account for bot authentication
-🚀 Installation
+Before running this project, make sure you have:
+
+- **Node.js**
+- **npm**
+- A valid **WhatsApp account** for authentication
+
+---
+
+## 🚀 Installation
 
 Clone the repository:
 
+```bash
 git clone https://github.com/AnggaTechI/AssistenWA.git
 cd AssistenWA
+```
 
 Install dependencies:
 
+```bash
 npm install
+```
 
 Run the bot:
 
+```bash
 node index.js
-🔧 Configuration
+```
 
-In your code, you will find a line like this:
+---
 
+## 🔧 Configuration
+
+Inside the code, you will find a line like this:
+
+```js
 const TARGET_JID = 'YOUR_NOMER@s.whatsapp.net'
+```
 
-You must replace YOUR_NOMER with your own WhatsApp number in international format.
+You **must replace** `YOUR_NOMER` with your own WhatsApp number in **international format**.
 
-Example
+### Example
+
+```js
 const TARGET_JID = '6281234567890@s.whatsapp.net'
-Important Notes
-Replace YOUR_NOMER with your actual WhatsApp number
-Use international format
-Do not use +
-Do not use spaces
-Keep the suffix:
-@s.whatsapp.net
+```
 
-Correct format:
+### Format Rules
 
+- Replace `YOUR_NOMER` with your actual WhatsApp number
+- Use **international format**
+- Do **not** use `+`
+- Do **not** use spaces
+- Keep the suffix `@s.whatsapp.net`
+
+### Correct Format Example
+
+```text
 628xxxxxxxxxx@s.whatsapp.net
-▶️ Usage
-Start the bot
-Scan the QR code if prompted
-Make sure TARGET_JID has been changed to your WhatsApp number
-Wait until the bot is connected
-The bot will monitor deleted messages and deleted media based on its anti-delete logic
+```
 
-⚠️ Disclaimer
+---
 
-This project is provided for educational, administrative, archival, and authorized use only.
-The author is not responsible for any misuse, abuse, privacy violations, damage, or legal consequences caused by this project, whether intentional or unintentional. By using this software, you accept full responsibility for your actions and agree to use it only in environments where you have explicit permission and where such use complies with applicable laws and platform rules.
+## ▶️ Usage
 
-🤝 Contributing
+1. Start the bot
+2. Scan the QR code if prompted
+3. Make sure `TARGET_JID` has been changed to your WhatsApp number
+4. Wait until the bot is successfully connected
+5. The bot will monitor deleted messages and media according to its anti-delete logic
 
-Contributions, improvements, and suggestions are welcome.
-Feel free to open an issue or submit a pull request.
+---
 
-👨‍💻 Author
+## 🔒 Security Notes
 
-Developed by AnggaTechI
-GitHub: https://github.com/AnggaTechI
+- Do **not** upload `auth_info/` to GitHub
+- Do **not** expose session files to the public
+- Keep your environment and credentials secure
+- Use this project only where you have proper authorization and consent where required
+
+---
+
+## 📌 Recommended `.gitignore`
+
+```gitignore
+node_modules/
+auth_info/
+.env
+```
+
+---
+
+## ⚠️ Disclaimer
+
+This project is provided for **educational, archival, administrative, and authorized use only**.
+
+The author is **not responsible** for any misuse, abuse, privacy violations, damage, or legal consequences caused by this project, whether intentional or unintentional. By using this software, you accept full responsibility for your actions and agree to use it only in environments where you have explicit permission and where such use complies with applicable laws and platform rules.
+
+---
+
+## 🤝 Contributing
+
+Contributions, suggestions, and improvements are welcome.
+
+If you would like to improve this project, feel free to:
+
+- Open an issue
+- Submit a pull request
+- Suggest new features or improvements
+
+---
+
+## 👨‍💻 Author
+
+Developed by **AnggaTechI**  
+GitHub: [AnggaTechI](https://github.com/AnggaTechI)
