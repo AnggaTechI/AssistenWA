@@ -49,10 +49,6 @@ The main goal of this bot is to provide an **anti-delete system for WhatsApp mes
 ├── package-lock.json
 ```
 
-> **Important:** `auth_info/` usually contains session or login data and should **never** be uploaded to a public GitHub repository.
-
----
-
 ## ⚙️ Requirements
 
 Before running this project, make sure you have:
@@ -102,21 +98,15 @@ You **must replace** `YOUR_NOMER` with your own WhatsApp number in **internation
 const TARGET_JID = '6281234567890@s.whatsapp.net'
 ```
 
-### Format Rules
+Open the `rvo.js` file, then find this line:
 
-- Replace `YOUR_NOMER` with your actual WhatsApp number
-- Use **international format**
-- Do **not** use `+`
-- Do **not** use spaces
-- Keep the suffix `@s.whatsapp.net`
-
-### Correct Format Example
-
-```text
+```js
+const TARGET_JID = 'YOUR_NOMER@s.whatsapp.net'
+```
+### Example
+```
 628xxxxxxxxxx@s.whatsapp.net
 ```
-
----
 
 ## ▶️ Usage
 
