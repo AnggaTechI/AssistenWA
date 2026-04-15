@@ -4,7 +4,7 @@ module.exports = {
   name: 'rvo',
   description: 'Buka pesan view once (reply pesan view once)',
   async execute(sock, msg, from, args) {
-    const botJid = 'YOUR_NUMBER@s.whatsapp.net'
+    const botJid = 'YOUR_NOMER@s.whatsapp.net'
     const contextInfo = msg.message?.extendedTextMessage?.contextInfo
     const quoted = contextInfo?.quotedMessage
 
