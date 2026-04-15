@@ -47,7 +47,6 @@ The main goal of this bot is to provide an **anti-delete system for WhatsApp mes
 ├── commands/
 ├── package.json
 ├── package-lock.json
-└── auth_info/
 ```
 
 > **Important:** `auth_info/` usually contains session or login data and should **never** be uploaded to a public GitHub repository.
