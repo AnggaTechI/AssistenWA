@@ -1,0 +1,13 @@
+{
+  "dependencies": {
+    "@adiwajshing/baileys": "^5.0.0",
+    "@whiskeysockets/baileys": "^7.0.0-rc.9",
+    "chokidar": "^5.0.0",
+    "pino": "^10.3.1",
+    "qrcode-terminal": "^0.12.0",
+    "qs": "^6.15.0",
+    "sharp": "^0.34.5",
+    "yt-dlp-exec": "^1.0.2",
+    "yt-search": "^2.13.1"
+  }
+}
