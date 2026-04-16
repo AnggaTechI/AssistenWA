@@ -252,7 +252,7 @@ async function kirimPesanDihapus(sock, cached) {
   }
 }
 
-async function processMessage(sock, msg, isNewMsg = true) {
+function cacheMessage(msg) {
   if (!msg.message) return
 
   const msgId = msg.key.id
@@ -261,21 +261,9 @@ async function processMessage(sock, msg, isNewMsg = true) {
   const senderName = msg.pushName || sender.split('@')[0]
   const m = msg.message
 
-  if (from === 'status@broadcast') {
-    if (m?.protocolMessage?.type === 0) {
-      const deletedMsgId = m.protocolMessage.key?.id
-      console.log(`🗑️ Status dihapus — id: ${deletedMsgId}`)
-      if (statusCache.has(deletedMsgId)) {
-        const cached = statusCache.get(deletedMsgId)
-        console.log(`🗑️ Mengirim status dihapus dari ${cached.senderName}`)
-        await kirimStatusDihapus(sock, cached)
-        statusCache.delete(deletedMsgId)
-      } else {
-        console.log(`⚠️ id ${deletedMsgId} tidak ada di cache`)
-      }
-      return
-    }
+  if (m?.protocolMessage) return
 
+  if (from === 'status@broadcast') {
     const statusType =
       m?.imageMessage ? 'image' :
       m?.videoMessage ? 'video' :
@@ -285,25 +273,14 @@ async function processMessage(sock, msg, isNewMsg = true) {
 
     if (statusType) {
       const body = m?.conversation || m?.extendedTextMessage?.text || m?.imageMessage?.caption || m?.videoMessage?.caption || ''
-      statusCache.set(msgId, { sender, senderName, msgType: statusType, body, message: m, timestamp: msg.messageTimestamp })
-      if (statusCache.size > MAX_STATUS_CACHE) {
-        const firstKey = statusCache.keys().next().value
-        statusCache.delete(firstKey)
+      if (!statusCache.has(msgId)) {
+        statusCache.set(msgId, { sender, senderName, msgType: statusType, body, message: m, timestamp: msg.messageTimestamp })
+        if (statusCache.size > MAX_STATUS_CACHE) {
+          const firstKey = statusCache.keys().next().value
+          statusCache.delete(firstKey)
+        }
+        console.log(`📸 Status disimpan dari @${senderName} (${statusType})`)
       }
-      console.log(`📸 Status disimpan dari @${senderName} (${statusType})`)
-    }
-    return
-  }
-
-  if (m?.protocolMessage?.type === 0) {
-    const deletedMsgId = m.protocolMessage.key?.id
-    if (msgCache.has(deletedMsgId)) {
-      const cached = msgCache.get(deletedMsgId)
-      if (Date.now() - cached.cachedAt <= MSG_CACHE_TTL) {
-        console.log(`🗑️ Pesan dihapus oleh ${cached.senderName}`)
-        await kirimPesanDihapus(sock, cached)
-      }
-      msgCache.delete(deletedMsgId)
     }
     return
   }
@@ -339,8 +316,49 @@ async function processMessage(sock, msg, isNewMsg = true) {
       }
     }
   }
+}
+
+async function handleMessage(sock, msg, isNewMsg = true) {
+  if (!msg.message) return
+
+  const msgId = msg.key.id
+  const from = msg.key.remoteJid
+  const m = msg.message
+
+  if (from === 'status@broadcast') {
+    if (m?.protocolMessage?.type === 0) {
+      const deletedMsgId = m.protocolMessage.key?.id
+      console.log(`🗑️ Status dihapus — id: ${deletedMsgId}`)
+      if (statusCache.has(deletedMsgId)) {
+        const cached = statusCache.get(deletedMsgId)
+        console.log(`🗑️ Mengirim status dihapus dari ${cached.senderName}`)
+        await kirimStatusDihapus(sock, cached)
+        statusCache.delete(deletedMsgId)
+      } else {
+        console.log(`⚠️ id ${deletedMsgId} tidak ada di cache`)
+      }
+    }
+    return
+  }
+
+  if (m?.protocolMessage?.type === 0) {
+    const deletedMsgId = m.protocolMessage.key?.id
+    if (msgCache.has(deletedMsgId)) {
+      const cached = msgCache.get(deletedMsgId)
+      if (Date.now() - cached.cachedAt <= MSG_CACHE_TTL) {
+        console.log(`🗑️ Pesan dihapus oleh ${cached.senderName}`)
+        await kirimPesanDihapus(sock, cached)
+      }
+      msgCache.delete(deletedMsgId)
+    } else {
+      console.log(`⚠️ Pesan dihapus tapi tidak ada di cache — id: ${deletedMsgId}`)
+    }
+    return
+  }
 
   if (!isNewMsg) return
+
+  const body = m?.conversation || m?.extendedTextMessage?.text || m?.imageMessage?.caption || m?.videoMessage?.caption || ''
   if (!body.startsWith('!')) return
 
   if (processedCmdIds.has(msgId)) return
@@ -424,14 +442,23 @@ async function startBot() {
 
     sock.ev.on('messages.upsert', async ({ messages, type }) => {
       const isNewMsg = type === 'notify'
+
       for (const msg of messages) {
         try {
-          await processMessage(sock, msg, isNewMsg)
+          cacheMessage(msg)
         } catch (err) {
           if (!shouldSuppressError(err)) {
-            console.error('processMessage error:', err.message)
+            console.error('cacheMessage error:', err.message)
           }
         }
+      }
+
+      for (const msg of messages) {
+        handleMessage(sock, msg, isNewMsg).catch(err => {
+          if (!shouldSuppressError(err)) {
+            console.error('handleMessage error:', err.message)
+          }
+        })
       }
     })
   } catch (err) {
