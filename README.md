@@ -101,11 +101,11 @@ const TARGET_JID = '6281234567890@s.whatsapp.net'
 Open the `rvo.js` file, then find this line:
 
 ```js
-const TARGET_JID = 'YOUR_NOMER@s.whatsapp.net'
+const botJid = 'YOUR_NOMER@s.whatsapp.net'
 ```
 ### Example
 ```
-628xxxxxxxxxx@s.whatsapp.net
+const botJid = '6281234567890@s.whatsapp.net'
 ```
 
 ## ▶️ Usage
