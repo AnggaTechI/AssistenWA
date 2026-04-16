@@ -12,15 +12,26 @@ const readline = require('readline')
 const chokidar = require('chokidar')
 
 const commands = {}
+const filePathToName = new Map()
 const commandsPath = path.join(__dirname, 'commands')
 
 function loadCommand(filePath) {
   try {
-    Object.keys(require.cache).forEach(key => {
-      if (key.startsWith(commandsPath)) delete require.cache[key]
-    })
+    delete require.cache[require.resolve(filePath)]
     const cmd = require(filePath)
+
+    if (!cmd || !cmd.name || typeof cmd.execute !== 'function') {
+      console.error(`❌ File ${path.basename(filePath)} tidak valid (butuh .name dan .execute)`)
+      return
+    }
+
+    if (filePathToName.has(filePath)) {
+      const oldName = filePathToName.get(filePath)
+      if (oldName !== cmd.name) delete commands[oldName]
+    }
+
     commands[cmd.name] = cmd
+    filePathToName.set(filePath, cmd.name)
     console.log(`✅ Command loaded: !${cmd.name}`)
   } catch (err) {
     console.error(`❌ Gagal load command ${filePath}:`, err.message)
@@ -29,16 +40,23 @@ function loadCommand(filePath) {
 
 function unloadCommand(filePath) {
   try {
-    delete require.cache[require.resolve(filePath)]
-    const fileName = path.basename(filePath, '.js')
-    for (const [name, cmd] of Object.entries(commands)) {
-      if (cmd.name === fileName || name === fileName) {
-        delete commands[name]
-        console.log(`🗑️ Command unloaded: !${name}`)
-        break
-      }
+    const name = filePathToName.get(filePath)
+    if (name) {
+      delete commands[name]
+      filePathToName.delete(filePath)
+      console.log(`🗑️ Command unloaded: !${name}`)
     }
-  } catch (err) {}
+    try {
+      delete require.cache[require.resolve(filePath)]
+    } catch {}
+  } catch (err) {
+    console.error('Gagal unload:', err.message)
+  }
+}
+
+if (!fs.existsSync(commandsPath)) {
+  fs.mkdirSync(commandsPath, { recursive: true })
+  console.log(`📁 Folder commands dibuat: ${commandsPath}`)
 }
 
 fs.readdirSync(commandsPath).forEach(file => {
@@ -52,20 +70,35 @@ const watcher = chokidar.watch(commandsPath, {
 })
 
 watcher
-  .on('add', filePath => { if (filePath.endsWith('.js')) { console.log(`📁 File baru: ${path.basename(filePath)}`); loadCommand(filePath) } })
-  .on('change', filePath => { if (filePath.endsWith('.js')) { console.log(`✏️ File diubah: ${path.basename(filePath)}`); loadCommand(filePath) } })
-  .on('unlink', filePath => { if (filePath.endsWith('.js')) { console.log(`🗑️ File dihapus: ${path.basename(filePath)}`); unloadCommand(filePath) } })
+  .on('add', filePath => {
+    if (filePath.endsWith('.js')) {
+      console.log(`📁 File baru: ${path.basename(filePath)}`)
+      loadCommand(filePath)
+    }
+  })
+  .on('change', filePath => {
+    if (filePath.endsWith('.js')) {
+      console.log(`✏️ File diubah: ${path.basename(filePath)}`)
+      loadCommand(filePath)
+    }
+  })
+  .on('unlink', filePath => {
+    if (filePath.endsWith('.js')) {
+      console.log(`🗑️ File dihapus: ${path.basename(filePath)}`)
+      unloadCommand(filePath)
+    }
+  })
 
 const TARGET_JID = 'YOUR_NOMER@s.whatsapp.net'
 
 const msgCache = new Map()
 const MAX_CACHE = 500000
-const MSG_CACHE_TTL = 7 * 24 * 60 * 60 * 1000 
+const MSG_CACHE_TTL = 7 * 24 * 60 * 60 * 1000
 
 const statusCache = new Map()
 const MAX_STATUS_CACHE = 500
 
-const processedMsgIds = new Set()
+const processedCmdIds = new Set()
 const MAX_PROCESSED = 2000
 
 let reconnectDelay = 3000
@@ -78,15 +111,12 @@ const SUPPRESSED_ERRORS = [
   'Session error',
 ]
 
-const logger = pino({ level: 'silent' }, {
-  write(msg) {
-    try {
-      const parsed = JSON.parse(msg)
-      const text = parsed.msg || parsed.err?.message || ''
-      if (SUPPRESSED_ERRORS.some(e => text.includes(e))) return
-    } catch {}
-  }
-})
+const logger = pino({ level: 'silent' })
+
+function shouldSuppressError(err) {
+  const text = err?.message || String(err)
+  return SUPPRESSED_ERRORS.some(e => text.includes(e))
+}
 
 const question = (text) => {
   const rl = readline.createInterface({ input: process.stdin, output: process.stdout })
@@ -111,7 +141,9 @@ async function downloadMedia(mediaMsg, type) {
     for await (const chunk of stream) chunks.push(chunk)
     return Buffer.concat(chunks)
   } catch (e) {
-    console.error(`downloadMedia gagal (${type}):`, e.message)
+    if (!shouldSuppressError(e)) {
+      console.error(`downloadMedia gagal (${type}):`, e.message)
+    }
     return null
   }
 }
@@ -224,14 +256,6 @@ async function processMessage(sock, msg, isNewMsg = true) {
   if (!msg.message) return
 
   const msgId = msg.key.id
-
-  if (processedMsgIds.has(msgId)) return
-  processedMsgIds.add(msgId)
-  if (processedMsgIds.size > MAX_PROCESSED) {
-    const first = processedMsgIds.values().next().value
-    processedMsgIds.delete(first)
-  }
-
   const from = msg.key.remoteJid
   const sender = msg.key.participant || from
   const senderName = msg.pushName || sender.split('@')[0]
@@ -271,37 +295,6 @@ async function processMessage(sock, msg, isNewMsg = true) {
     return
   }
 
-  const body = m?.conversation || m?.extendedTextMessage?.text || m?.imageMessage?.caption || m?.videoMessage?.caption || ''
-  const msgType =
-    m?.conversation ? 'text' :
-    m?.extendedTextMessage ? 'text' :
-    m?.imageMessage ? 'image' :
-    m?.videoMessage ? 'video' :
-    m?.audioMessage ? 'audio' :
-    m?.stickerMessage ? 'sticker' :
-    m?.documentMessage ? 'document' : 'unknown'
-
-  msgCache.set(msgId, {
-    from, sender, senderName, body, msgType,
-    message: m,
-    timestamp: msg.messageTimestamp,
-    cachedAt: Date.now(), 
-  })
-
-  if (msgCache.size > MAX_CACHE) {
-    const now = Date.now()
-    for (const [key, val] of msgCache.entries()) {
-      if (now - val.cachedAt > MSG_CACHE_TTL) {
-        msgCache.delete(key)
-      }
-      if (msgCache.size <= MAX_CACHE) break
-    }
-    if (msgCache.size > MAX_CACHE) {
-      const firstKey = msgCache.keys().next().value
-      msgCache.delete(firstKey)
-    }
-  }
-
   if (m?.protocolMessage?.type === 0) {
     const deletedMsgId = m.protocolMessage.key?.id
     if (msgCache.has(deletedMsgId)) {
@@ -315,8 +308,47 @@ async function processMessage(sock, msg, isNewMsg = true) {
     return
   }
 
-  if (!isNewMsg) return 
+  const body = m?.conversation || m?.extendedTextMessage?.text || m?.imageMessage?.caption || m?.videoMessage?.caption || ''
+  const msgType =
+    m?.conversation ? 'text' :
+    m?.extendedTextMessage ? 'text' :
+    m?.imageMessage ? 'image' :
+    m?.videoMessage ? 'video' :
+    m?.audioMessage ? 'audio' :
+    m?.stickerMessage ? 'sticker' :
+    m?.documentMessage ? 'document' : 'unknown'
+
+  if (!msgCache.has(msgId)) {
+    msgCache.set(msgId, {
+      from, sender, senderName, body, msgType,
+      message: m,
+      timestamp: msg.messageTimestamp,
+      cachedAt: Date.now(),
+    })
+
+    if (msgCache.size > MAX_CACHE) {
+      const now = Date.now()
+      for (const [key, val] of msgCache.entries()) {
+        if (now - val.cachedAt > MSG_CACHE_TTL) {
+          msgCache.delete(key)
+        }
+      }
+      while (msgCache.size > MAX_CACHE) {
+        const firstKey = msgCache.keys().next().value
+        msgCache.delete(firstKey)
+      }
+    }
+  }
+
+  if (!isNewMsg) return
   if (!body.startsWith('!')) return
+
+  if (processedCmdIds.has(msgId)) return
+  processedCmdIds.add(msgId)
+  if (processedCmdIds.size > MAX_PROCESSED) {
+    const first = processedCmdIds.values().next().value
+    processedCmdIds.delete(first)
+  }
 
   const args = body.slice(1).trim().split(/\s+/)
   const commandName = args.shift().toLowerCase()
@@ -326,68 +358,104 @@ async function processMessage(sock, msg, isNewMsg = true) {
       await commands[commandName].execute(sock, msg, from, args)
     } catch (err) {
       console.error('Error:', err)
-      await sock.sendMessage(from, { text: '❌ Terjadi error saat menjalankan command.' })
+      try {
+        await sock.sendMessage(from, { text: '❌ Terjadi error saat menjalankan command.' })
+      } catch {}
     }
   } else {
-    await sock.sendMessage(from, { text: `Command *!${commandName}* tidak ditemukan. Ketik *!help* untuk daftar command.` })
+    try {
+      await sock.sendMessage(from, { text: `Command *!${commandName}* tidak ditemukan. Ketik *!help* untuk daftar command.` })
+    } catch {}
   }
 }
 
 async function startBot() {
-  const { state, saveCreds } = await useMultiFileAuthState('auth_info')
-  const { version } = await fetchLatestBaileysVersion()
+  try {
+    const { state, saveCreds } = await useMultiFileAuthState('auth_info')
+    const { version } = await fetchLatestBaileysVersion()
 
-  const sock = makeWASocket({
-    version,
-    auth: state,
-    logger,
-    browser: ['Ubuntu', 'Chrome', '20.0.04'],
-    printQRInTerminal: false,
-    readIncomingMessages: false,
-    getMessage: async (key) => {
-      return { conversation: '' }
-    },
-  })
+    const sock = makeWASocket({
+      version,
+      auth: state,
+      logger,
+      browser: ['Ubuntu', 'Chrome', '120.0.0'],
+      printQRInTerminal: false,
+      readIncomingMessages: false,
+      getMessage: async (key) => {
+        const cached = msgCache.get(key.id)
+        if (cached?.message) return cached.message
+        return { conversation: '' }
+      },
+    })
 
-  if (!sock.authState.creds.registered) {
-    let nomor = await question('Masukkan nomor WhatsApp (contoh: 6281234567890): ')
-    nomor = nomor.replace(/\D/g, '')
-    setTimeout(async () => {
-      const code = await sock.requestPairingCode(nomor)
-      const formatted = code?.match(/.{1,4}/g)?.join('-') || code
-      console.log(`\n✅ Pairing Code kamu: ${formatted}`)
-      console.log('Buka WhatsApp > Perangkat Tertaut > Tautkan Perangkat > Masukkan kode\n')
-    }, 3000)
+    if (!sock.authState.creds.registered) {
+      let nomor = await question('Masukkan nomor WhatsApp (contoh: 6281234567890): ')
+      nomor = nomor.replace(/\D/g, '')
+      setTimeout(async () => {
+        try {
+          const code = await sock.requestPairingCode(nomor)
+          const formatted = code?.match(/.{1,4}/g)?.join('-') || code
+          console.log(`\n✅ Pairing Code kamu: ${formatted}`)
+          console.log('Buka WhatsApp > Perangkat Tertaut > Tautkan Perangkat > Masukkan kode\n')
+        } catch (e) {
+          console.error('Gagal request pairing code:', e.message)
+        }
+      }, 3000)
+    }
+
+    sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
+      if (connection === 'close') {
+        const code = lastDisconnect?.error?.output?.statusCode
+        if (code === DisconnectReason.loggedOut) {
+          console.log('❌ Logged out! Hapus folder auth_info lalu restart.')
+          process.exit(0)
+        } else {
+          console.log(`🔄 Reconnecting dalam ${reconnectDelay / 1000}s...`)
+          setTimeout(startBot, reconnectDelay)
+          reconnectDelay = Math.min(reconnectDelay * 2, 60000)
+        }
+      } else if (connection === 'open') {
+        console.log('✅ Bot berhasil terhubung!')
+        reconnectDelay = 3000
+      }
+    })
+
+    sock.ev.on('creds.update', saveCreds)
+
+    sock.ev.on('messages.upsert', async ({ messages, type }) => {
+      const isNewMsg = type === 'notify'
+      for (const msg of messages) {
+        try {
+          await processMessage(sock, msg, isNewMsg)
+        } catch (err) {
+          if (!shouldSuppressError(err)) {
+            console.error('processMessage error:', err.message)
+          }
+        }
+      }
+    })
+  } catch (err) {
+    console.error('❌ Gagal start bot:', err.message)
+    console.log(`🔄 Retry dalam ${reconnectDelay / 1000}s...`)
+    setTimeout(startBot, reconnectDelay)
+    reconnectDelay = Math.min(reconnectDelay * 2, 60000)
+  }
+}
+
+const MAX_RAM_BYTES = 1 * 1024 * 1024 * 1024
+setInterval(() => {
+  const now = Date.now()
+  let expiredCount = 0
+  for (const [key, val] of msgCache.entries()) {
+    if (now - val.cachedAt > MSG_CACHE_TTL) {
+      msgCache.delete(key)
+      expiredCount++
+    }
+  }
+  if (expiredCount > 0) {
+    console.log(`🧹 TTL cleanup: ${expiredCount} pesan expired dibersihkan`)
   }
 
-  sock.ev.on('connection.update', ({ connection, lastDisconnect }) => {
-    if (connection === 'close') {
-      const code = lastDisconnect?.error?.output?.statusCode
-      if (code === DisconnectReason.loggedOut) {
-        console.log('❌ Logged out! Hapus folder auth_info lalu restart.')
-        process.exit(0)
-      } else {
-        console.log(`🔄 Reconnecting dalam ${reconnectDelay / 1000}s...`)
-        setTimeout(startBot, reconnectDelay)
-        reconnectDelay = Math.min(reconnectDelay * 2, 60000)
-      }
-    } else if (connection === 'open') {
-      console.log('✅ Bot berhasil terhubung!')
-      reconnectDelay = 3000
-    }
-  })
-
-  sock.ev.on('creds.update', saveCreds)
-
-  sock.ev.on('messages.upsert', async ({ messages, type }) => {
-    const isNewMsg = type === 'notify'
-    for (const msg of messages) {
-      await processMessage(sock, msg, isNewMsg)
-    }
-  })
-}
-const MAX_RAM_BYTES = 1 * 1024 * 1024 * 1024 
-setInterval(() => {
   const used = process.memoryUsage().rss
   if (used > MAX_RAM_BYTES) {
     console.log(`⚠️ RAM bot ${(used / 1024 / 1024).toFixed(0)}MB, auto cleanup cache...`)
@@ -399,6 +467,18 @@ setInterval(() => {
     statusKeys.forEach(k => statusCache.delete(k))
     console.log(`🧹 Cache dibersihkan: ${deleteCount} pesan, ${statusDeleteCount} status`)
   }
-}, 5 * 60 * 1000) 
+}, 5 * 60 * 1000)
+
+process.on('unhandledRejection', (err) => {
+  if (!shouldSuppressError(err)) {
+    console.error('Unhandled rejection:', err?.message || err)
+  }
+})
+
+process.on('uncaughtException', (err) => {
+  if (!shouldSuppressError(err)) {
+    console.error('Uncaught exception:', err?.message || err)
+  }
+})
 
 startBot()
