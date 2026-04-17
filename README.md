@@ -84,7 +84,7 @@ node index.js
 
 ## 🔧 Configuration
 
-Inside the code, you will find a line like this:
+Open the `index.js` file, then find this line:
 
 ```js
 const TARGET_JID = 'YOUR_NOMER@s.whatsapp.net'
@@ -103,8 +103,12 @@ Open the `rvo.js` file, then find this line:
 ```js
 const botJid = 'YOUR_NOMER@s.whatsapp.net'
 ```
+
+You **must replace** `YOUR_NOMER` with your own WhatsApp number in **international format**.
+
 ### Example
-```
+
+```js
 const botJid = '6281234567890@s.whatsapp.net'
 ```
 
