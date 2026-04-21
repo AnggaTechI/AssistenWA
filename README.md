@@ -1,14 +1,13 @@
-# AssistenWA - WhatsApp Assistant Bot
+# WhatsApp Anti-Delete Bot
 
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:25D366,50:1f6feb,100:7f5af0&height=220&section=header&text=AssistenWA&fontSize=52&fontColor=ffffff&animation=fadeIn&fontAlignY=38&desc=Advanced%20WhatsApp%20Assistant%20Bot%20with%20Anti-Delete%20%26%20Automation%20Features&descAlignY=58&descSize=18" />
+  A lightweight WhatsApp bot built with Node.js to detect, preserve, and forward deleted messages or media for authorized use cases.
 </p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/Node.js-Required-339933?style=for-the-badge&logo=node.js&logoColor=white" />
   <img src="https://img.shields.io/badge/WhatsApp-Bot-25D366?style=for-the-badge&logo=whatsapp&logoColor=white" />
   <img src="https://img.shields.io/badge/Status-Active-1f6feb?style=for-the-badge" />
-  <img src="https://img.shields.io/badge/System-Modular-blueviolet?style=for-the-badge" />
   <img src="https://img.shields.io/badge/Focus-Anti--Delete-ff6b6b?style=for-the-badge" />
 </p>
 
@@ -16,170 +15,136 @@
 
 ## 📖 Overview
 
-**AssistenWA** is an advanced yet lightweight WhatsApp assistant bot built using **Node.js** and powered by the **Baileys library**.  
+**WhatsApp Anti-Delete Bot** is a simple and lightweight bot designed to monitor deleted WhatsApp messages and media. Its main purpose is to preserve deleted content and optionally forward it to a configured target account, depending on how the script is set up.
 
-This bot is designed not only as a simple automation tool, but also as a **smart assistant system** that focuses on message monitoring, recovery, and command-based interaction.
-
-Unlike basic bots, AssistenWA combines:
-- ⚡ Speed (lightweight architecture)
-- 🧠 Smart command handling
-- 🛠 Modular system for easy expansion
-- 🔐 Anti-delete monitoring system
-
-This makes it suitable for:
-- Personal automation
-- Admin monitoring
-- Experimental bot development
-- Learning WhatsApp bot internals
-
----
-
-## 🎯 Core Concept
-
-The main idea behind AssistenWA is:
-
-> “Never lose deleted messages again.”
-
-When a message or media is deleted by a user, the bot will:
-1. Detect the deletion event
-2. Retrieve the original content (if cached)
-3. Preserve or forward it to a target account
-
-This creates a powerful **anti-delete system** combined with assistant features.
+This project is intended for **educational, archival, administrative, and authorized use cases only**.
 
 ---
 
 ## ✨ Features
 
-### 🧩 Core Features
-- Detect deleted **text messages**
-- Detect deleted **media (image/video)**
-- Restore deleted content
-- Forward deleted messages automatically
-- Lightweight runtime
-
-### ⚙️ System Features
-- Modular command handler (`commands/`)
-- Dynamic command loader
-- Easy to extend (add new commands)
-- Clean code structure
-
-### 🤖 Assistant Features
-- Ping command
-- Downloader commands (TikTok, IG, YouTube, etc.)
-- Sticker maker
-- Tag all members
-- Utility-based commands
+- Detects deleted **text messages**
+- Detects deleted **media messages**
+- Preserves deleted content
+- Can forward deleted content to a configured target account
+- Lightweight and easy to maintain
+- Simple project structure
+- Easy to configure and customize
 
 ---
 
-## 🧠 Why This Project?
+## 🎯 Main Purpose
 
-Many WhatsApp bots are:
-- Heavy
-- Messy code
-- Hard to maintain
-
-**AssistenWA solves that by:**
-- Keeping structure clean
-- Using modular commands
-- Making everything easy to edit
+The main goal of this bot is to provide an **anti-delete system for WhatsApp messages and media**. When a user deletes a message or media file, the bot can capture and preserve that content based on the configured logic in the script.
 
 ---
 
 ## 📂 Project Structure
 
+```bash
 .
-├── index.js          # Main bot logic
-├── commands/         # Command modules
-├── package.json      # Dependencies
+├── index.js
+├── commands/
+├── package.json
 ├── package-lock.json
-
----
+```
 
 ## ⚙️ Requirements
 
-Before running:
+Before running this project, make sure you have:
 
-- Node.js (Recommended LTS)
-- npm
-- Active WhatsApp account
+- **Node.js**
+- **npm**
+- A valid **WhatsApp account** for authentication
 
 ---
 
 ## 🚀 Installation
 
-Clone repo:
+Clone the repository:
 
+```bash
 git clone https://github.com/AnggaTechI/AssistenWA.git
 cd AssistenWA
+```
 
 Install dependencies:
 
+```bash
 npm install
+```
 
-Run bot:
+Run the bot:
 
+```bash
 node index.js
+```
 
 ---
 
 ## 🔧 Configuration
 
-### index.js
+Open the `index.js` file, then find this line:
 
-const TARGET_JID = 'YOUR_NUMBER@s.whatsapp.net'
+```js
+const TARGET_JID = 'YOUR_NOMER@s.whatsapp.net'
+```
 
-### commands/rvo.js
-
-const botJid = 'YOUR_NUMBER@s.whatsapp.net'
+You **must replace** `YOUR_NOMER` with your own WhatsApp number in **international format**.
 
 ### Example
 
+```js
 const TARGET_JID = '6281234567890@s.whatsapp.net'
+```
 
----
+Open the `rvo.js` file, then find this line:
+
+```js
+const botJid = 'YOUR_NOMER@s.whatsapp.net'
+```
+
+You **must replace** `YOUR_NOMER` with your own WhatsApp number in **international format**.
+
+### Example
+
+```js
+const botJid = '6281234567890@s.whatsapp.net'
+```
 
 ## ▶️ Usage
 
-1. Run the bot
-2. Login using WhatsApp QR / pairing code
-3. Wait until connected
-4. Bot starts monitoring automatically
-5. Deleted messages will be captured
+1. Start the bot
+2. Enter your WhatsApp number when prompted
+3. Copy the verification code generated by the bot
+4. Use that code to link your WhatsApp account
+5. Make sure `TARGET_JID` has been changed to your WhatsApp number
+6. Wait until the bot is successfully connected
+7. The bot will monitor deleted messages and media according to its anti-delete logic
 
 ---
 
 ## ⚠️ Disclaimer
 
-This project is created strictly for:
+This project is provided for **educational, archival, administrative, and authorized use only**.
 
-- Educational purposes
-- System learning
-- Authorized monitoring
-
-The author is **NOT responsible** for:
-- Privacy violations
-- Illegal usage
-- Misuse of recovered messages
-
-Use responsibly and only in environments where you have permission.
+The author is **not responsible** for any misuse, abuse, privacy violations, damage, or legal consequences caused by this project, whether intentional or unintentional. By using this software, you accept full responsibility for your actions and agree to use it only in environments where you have explicit permission and where such use complies with applicable laws and platform rules.
 
 ---
 
 ## 🤝 Contributing
 
-Contributions are welcome!
+Contributions, suggestions, and improvements are welcome.
 
-You can:
-- Add new commands
-- Improve performance
-- Enhance UI/UX
-- Report bugs
+If you would like to improve this project, feel free to:
+
+- Open an issue
+- Submit a pull request
+- Suggest new features or improvements
 
 ---
 
 ## 👨‍💻 Author
 
-**AnggaTechI**  
-https://github.com/AnggaTechI
+Developed by **AnggaTechI**  
+GitHub: [AnggaTechI](https://github.com/AnggaTechI)
